@@ -3,25 +3,43 @@ const dashboard = document.getElementById('dashboard');
 const viewContent = document.getElementById('viewContent');
 const toast = document.getElementById('toast');
 let currentRole = 'client';
-const users = [
+let currentUser = null;
+const defaultUsers = [
   { name: 'Sarah Namukasa', email: 'sarah@example.com', joined: 'Today, 08:42', status: 'Pending', investments: 'UGX 0' },
   { name: 'Daniel Okello', email: 'daniel@example.com', joined: '15 Sep 2026', status: 'Active', investments: 'UGX 850,000' },
   { name: 'Miriam Atwine', email: 'miriam@example.com', joined: '14 Sep 2026', status: 'Active', investments: 'UGX 2,100,000' }
 ];
+const storedUsers = JSON.parse(localStorage.getItem('apexUsers') || '[]');
+const users = [...storedUsers, ...defaultUsers.filter(defaultUser => !storedUsers.some(user => user.email === defaultUser.email))];
+function persistUsers(){ localStorage.setItem('apexUsers', JSON.stringify(users.filter(user => !defaultUsers.some(defaultUser => defaultUser.email === user.email)))); }
 const transactions = [
   { icon: 'M', name: 'MTN Mobile Money', meta: 'Deposit · Today, 09:41', amount: '+ UGX 250,000', type: 'deposit' },
   { icon: 'A', name: 'Airtel Money', meta: 'Deposit · 14 Sep 2026', amount: '+ UGX 75,000', type: 'deposit' },
   { icon: 'W', name: 'Bank withdrawal', meta: 'Withdrawal · 11 Sep 2026', amount: '- UGX 100,000', type: 'withdraw' }
 ];
-const registeredEmail = new URLSearchParams(window.location.search).get('registered');
-if(registeredEmail){ document.getElementById('email').value = registeredEmail; showToast('Account created. Sign in to continue.'); }
+const registeredParams = new URLSearchParams(window.location.search);
+const registeredEmail = registeredParams.get('registered');
+const registeredName = registeredParams.get('name');
+if(registeredEmail && document.getElementById('email')){
+  document.getElementById('email').value = registeredEmail;
+  if(registeredName && !users.some(user => user.email.toLowerCase() === registeredEmail.toLowerCase())){
+    const newUser = { name: registeredName, email: registeredEmail, joined: 'Today, 10:15', status: 'Pending', investments: 'UGX 0', portfolio: 0, activeInvestment: 0 };
+    users.unshift(newUser);
+    localStorage.setItem('apexUsers', JSON.stringify(users.filter(user => !defaultUsers.some(defaultUser => defaultUser.email === user.email))));
+  }
+  showToast('Account created. Sign in to continue.');
+}
+function initials(name){ return name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(); }
+function updateUserChrome(user){ const shortName = user.name.split(' ')[0]; const userInitials = initials(user.name); document.getElementById('pageTitle').innerHTML = currentRole === 'admin' ? 'Admin operations <span>~</span>' : `Good morning, ${shortName} <span>~</span>`; document.getElementById('sidebarName').textContent = user.name; document.getElementById('topName').textContent = user.name; document.getElementById('sidebarAvatar').textContent = userInitials; document.getElementById('topAvatar').textContent = userInitials; }
 function money(value){ return 'UGX ' + Number(value).toLocaleString('en-US'); }
 function showToast(message){ toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3200); }
 function renderOverview(){
+  const portfolio = currentUser.portfolio || 0; const activeInvestment = currentUser.activeInvestment || 0;
+  const userTransactions = portfolio ? transactions : [];
   viewContent.innerHTML = `<div class="welcome-row"><div><h3>Your capital at a glance</h3><p>Stay close to the moves that matter.</p></div><div class="date-badge">16 Sep 2026 <span>v</span></div></div>
-  <div class="summary-grid"><article class="summary-card highlight"><div class="card-label">Total portfolio</div><h4>UGX 4,850,000</h4><div class="card-foot"><span class="trend">+ UGX 1,250,000</span> this cycle</div><div class="mini-chart">⌁⌁⌁</div></article><article class="summary-card"><div class="card-label">Active investment</div><h4>UGX 3,600,000</h4><div class="card-foot">12 days remaining</div></article><article class="summary-card"><div class="card-label">Projected growth</div><h4 class="trend">+35% <span style="font-size:12px;color:var(--muted);font-family:'DM Sans'">/ day</span></h4><div class="card-foot">14-day investment cycle</div></article></div>
-  <div class="section-grid"><article class="content-card"><div class="card-heading"><h3>Portfolio allocation</h3><a href="#" data-view-link="markets">View markets &rarr;</a></div><div class="allocation-chart"><div class="donut"><div class="donut-center">UGX 4.8M</div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot" style="background:var(--teal)"></i> Standard markets</span><strong>58%</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--lime)"></i> Active investment</span><strong>23%</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--orange)"></i> Available cash</span><strong>19%</strong></div></div></div></article><article class="content-card"><div class="card-heading"><h3>Quick actions</h3></div><p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0">Move money into your account or request a withdrawal when you need it.</p><div class="action-row"><button class="action-button deposit" data-action="deposit">+ Deposit</button><button class="action-button withdraw" data-action="withdraw">- Withdraw</button></div></article></div>
-  <div class="section-grid" style="margin-top:15px"><article class="content-card"><div class="card-heading"><h3>Recent activity</h3><a href="#" data-view-link="activity">See all &rarr;</a></div><div class="transaction-list">${transactions.map(transactionTemplate).join('')}</div></article><article class="content-card"><div class="card-heading"><h3>Markets</h3><a href="#" data-view-link="markets">Open market &rarr;</a></div><div class="forex-list">${forexTemplate('SPX','S&P 500','5,618.25','+0.84%','blue')}${forexTemplate('NDX','Nasdaq 100','19,412.10','+0.32%','yellow')}${forexTemplate('GOLD','Gold / USD','2,563.40','-0.12%','')}</div></article></div>`;
+  <div class="summary-grid"><article class="summary-card highlight"><div class="card-label">Total portfolio</div><h4>${money(portfolio)}</h4><div class="card-foot"><span class="trend">${portfolio ? '+ UGX 1,250,000' : 'UGX 0 deposited'}</span> ${portfolio ? 'this cycle' : 'ready when you are'}</div><div class="mini-chart">⌁⌁⌁</div></article><article class="summary-card"><div class="card-label">Active investment</div><h4>${money(activeInvestment)}</h4><div class="card-foot">${activeInvestment ? '12 days remaining' : 'No active investment'}</div></article><article class="summary-card"><div class="card-label">Projected growth</div><h4 class="trend">${portfolio ? '+35%' : '0%'} <span style="font-size:12px;color:var(--muted);font-family:'DM Sans'">/ day</span></h4><div class="card-foot">14-day investment cycle</div></article></div>
+  <div class="section-grid"><article class="content-card"><div class="card-heading"><h3>Portfolio allocation</h3><a href="#" data-view-link="markets">View markets &rarr;</a></div><div class="allocation-chart"><div class="donut"><div class="donut-center">${money(portfolio)}</div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot" style="background:var(--teal)"></i> Standard markets</span><strong>${portfolio ? '58%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--lime)"></i> Active investment</span><strong>${activeInvestment ? '23%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--orange)"></i> Available cash</span><strong>${portfolio ? '19%' : '0%'}</strong></div></div></div></article><article class="content-card"><div class="card-heading"><h3>Quick actions</h3></div><p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0">Move money into your account or request a withdrawal when you need it.</p><div class="action-row"><button class="action-button deposit" data-action="deposit">+ Deposit</button><button class="action-button withdraw" data-action="withdraw">- Withdraw</button></div></article></div>
+  <div class="section-grid" style="margin-top:15px"><article class="content-card"><div class="card-heading"><h3>Recent activity</h3><a href="#" data-view-link="activity">See all &rarr;</a></div><div class="transaction-list">${userTransactions.length ? userTransactions.map(transactionTemplate).join('') : '<div class="empty-view"><p>No activity yet. Your confirmed deposits and investments will appear here.</p></div>'}</div></article><article class="content-card"><div class="card-heading"><h3>Markets</h3><a href="#" data-view-link="markets">Open market &rarr;</a></div><div class="forex-list">${forexTemplate('SPX','S&P 500','5,618.25','+0.84%','blue')}${forexTemplate('NDX','Nasdaq 100','19,412.10','+0.32%','yellow')}${forexTemplate('GOLD','Gold / USD','2,563.40','-0.12%','')}</div></article></div>`;
   bindDynamicEvents();
 }
 function transactionTemplate(item){ return `<div class="transaction"><div class="transaction-name"><span class="pair-icon">${item.icon}</span><span><strong>${item.name}</strong><small>${item.meta}</small></span></div><div class="transaction-amount ${item.type === 'deposit' ? 'deposit-text' : 'withdraw-text'}">${item.amount}<small>${item.type === 'deposit' ? 'Completed' : 'Processed'}</small></div></div>`; }
@@ -31,7 +49,7 @@ function renderView(view){
   if(view === 'overview'){ renderOverview(); return; }
   if(view === 'markets'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Markets</h3><p>Track standard benchmark markets shaping your portfolio.</p></div></div><div class="content-card"><div class="card-heading"><h3>Live instruments</h3><span class="trend" style="font-size:11px">Market open</span></div><div class="forex-list">${forexTemplate('SPX','S&P 500','5,618.25','+0.84%','blue')}${forexTemplate('NDX','Nasdaq 100','19,412.10','+0.32%','yellow')}${forexTemplate('GOLD','Gold / USD','2,563.40','-0.12%','')}${forexTemplate('BRENT','Brent Crude','73.55','+0.16%','blue')}</div></div>`; }
   if(view === 'activity'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Activity</h3><p>A clear record of every movement.</p></div></div><div class="content-card"><div class="card-heading"><h3>All transactions</h3></div><div class="transaction-list">${transactions.map(transactionTemplate).join('')}</div></div>`; }
-  if(view === 'settings'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Account settings</h3><p>Manage your personal account preferences.</p></div></div><div class="empty-view"><h3>Alex Morgan</h3><p>Personal account · alex@example.com</p><button class="action-button deposit" style="max-width:180px;margin-top:22px" onclick="showToast('Settings are saved automatically.')">Update profile</button></div>`; }
+  if(view === 'settings'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Account settings</h3><p>Manage your personal account preferences.</p></div></div><div class="empty-view"><h3>${currentUser.name}</h3><p>Personal account · ${currentUser.email}</p><button class="action-button deposit" style="max-width:180px;margin-top:22px" onclick="showToast('Settings are saved automatically.')">Update profile</button></div>`; }
   if(view === 'admin'){ renderAdmin(); }
   bindDynamicEvents();
 }
@@ -40,6 +58,7 @@ function renderAdmin(){
   document.querySelectorAll('[data-user-action]').forEach(button => button.onclick = () => {
     const user = users[Number(button.dataset.userIndex)];
     user.status = button.dataset.userAction === 'approve' ? 'Active' : 'Suspended';
+    persistUsers();
     showToast(`${user.name} is now ${user.status.toLowerCase()}.`);
     renderAdmin();
   });
@@ -51,9 +70,22 @@ function openModal(type){
   document.body.appendChild(modal); document.getElementById('cancelModal').onclick = () => modal.remove(); document.getElementById('confirmModal').onclick = () => { const amount = Number(document.getElementById('amount').value); if(isDeposit && (amount < 15000 || amount > 20000000)){ showToast('Enter an amount between UGX 15,000 and UGX 20,000,000.'); return; } if(!amount){ showToast('Enter an amount to continue.'); return; } modal.remove(); showToast(isDeposit ? 'Payment details submitted for manual confirmation.' : 'Withdrawal request submitted for review.'); };
 }
 function bindDynamicEvents(){ document.querySelectorAll('[data-action]').forEach(button => button.onclick = () => openModal(button.dataset.action)); document.querySelectorAll('[data-view-link]').forEach(link => link.onclick = event => { event.preventDefault(); renderView(link.dataset.viewLink); }); }
-document.getElementById('loginForm').onsubmit = event => { event.preventDefault(); currentRole = document.getElementById('accountType').value; loginScreen.hidden = true; dashboard.hidden = false; dashboard.classList.toggle('admin-mode', currentRole === 'admin'); document.getElementById('pageTitle').innerHTML = currentRole === 'admin' ? 'Admin operations <span>~</span>' : 'Good morning, Alex <span>~</span>'; renderView(currentRole === 'admin' ? 'admin' : 'overview'); showToast(currentRole === 'admin' ? 'Administrator access granted.' : 'Welcome back, Alex.'); };
-document.getElementById('logoutButton').onclick = () => { dashboard.hidden = true; loginScreen.hidden = false; document.getElementById('loginForm').reset(); };
-document.getElementById('showPassword').onclick = () => { const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; document.getElementById('showPassword').textContent = input.type === 'password' ? 'SHOW' : 'HIDE'; };
-document.getElementById('forgotLink').onclick = event => { event.preventDefault(); showToast('Password reset instructions are on their way.'); };
-document.getElementById('notificationButton').onclick = () => { showToast('No new account alerts. Your latest verified activity is shown below.'); if(currentRole === 'client'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Account notices</h3><p>Updates tied to your actual account activity.</p></div></div><article class="content-card"><div class="notice-list"><div class="notice"><strong>Deposit confirmation</strong><small>MTN Mobile Money deposit of UGX 250,000 completed today at 09:41.</small></div><div class="notice"><strong>Investment cycle reminder</strong><small>Your current cycle has 12 days remaining. Projected figures are estimates, not guaranteed returns.</small></div></div></article>`; }};
+const loginForm = document.getElementById('loginForm');
+if(loginForm){ loginForm.onsubmit = event => { event.preventDefault(); currentRole = document.getElementById('accountType').value; const email = document.getElementById('email').value.trim().toLowerCase(); const password = document.getElementById('password').value; if(currentRole === 'client'){ currentUser = users.find(user => user.email.toLowerCase() === email && user.status !== 'Suspended' && (!user.password || user.password === password)); if(!currentUser){ showToast('Email or password not recognised, or this account is suspended.'); return; } } else { currentUser = { name: 'Administrator', email, status: 'Active', portfolio: 0, activeInvestment: 0 }; } window.location.href = `dashboard.html?email=${encodeURIComponent(currentUser.email)}&name=${encodeURIComponent(currentUser.name)}&role=${currentRole}`; }; }
+const logoutButton = document.getElementById('logoutButton');
+if(logoutButton){ logoutButton.onclick = () => { window.location.href = 'index.html'; }; }
+const showPassword = document.getElementById('showPassword');
+if(showPassword){ showPassword.onclick = () => { const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; showPassword.textContent = input.type === 'password' ? 'SHOW' : 'HIDE'; }; }
+const forgotLink = document.getElementById('forgotLink');
+if(forgotLink){ forgotLink.onclick = event => { event.preventDefault(); showToast('Password reset instructions are on their way.'); }; }
+const notificationButton = document.getElementById('notificationButton');
+if(notificationButton){ notificationButton.onclick = () => { showToast('No new account alerts. Your latest verified activity is shown below.'); if(currentRole === 'client'){ viewContent.innerHTML = `<div class="welcome-row"><div><h3>Account notices</h3><p>Updates tied to your actual account activity.</p></div></div><article class="content-card"><div class="notice-list"><div class="notice"><strong>Deposit confirmation</strong><small>MTN Mobile Money deposit of UGX 250,000 completed today at 09:41.</small></div><div class="notice"><strong>Investment cycle reminder</strong><small>Your current cycle has 12 days remaining. Projected figures are estimates, not guaranteed returns.</small></div></div></article>`; }}; }
 document.querySelectorAll('.nav-item').forEach(item => item.onclick = () => renderView(item.dataset.view));
+if(dashboard){
+  currentRole = registeredParams.get('role') || 'client';
+  const dashboardEmail = (registeredParams.get('email') || '').toLowerCase();
+  currentUser = users.find(user => user.email.toLowerCase() === dashboardEmail) || { name: registeredParams.get('name') || 'Alex Morgan', email: dashboardEmail, status: 'Active', portfolio: 0, activeInvestment: 0 };
+  dashboard.classList.toggle('admin-mode', currentRole === 'admin');
+  updateUserChrome(currentUser);
+  renderView(currentRole === 'admin' ? 'admin' : 'overview');
+}
