@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#061b2e">
+  <title>Create account | APEX CAPITAL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="login-screen signup-screen">
+      <div class="login-visual">
+        <div class="brand-mark"><span>APEX</span><small>CAPITAL</small></div>
+        <div class="visual-copy">
+          <p class="eyebrow">START YOUR JOURNEY</p>
+          <h1>Build your<br><em>capital future.</em></h1>
+          <p>Create a secure account and take your first step toward more intentional wealth.</p>
+        </div>
+        <div class="market-pulse"><span class="pulse-dot"></span> Your capital, your pace</div>
+      </div>
+      <div class="login-panel">
+        <div class="mobile-brand"><div class="brand-mark"><span>APEX</span><small>CAPITAL</small></div></div>
+        <div class="login-heading"><p class="eyebrow">NEW ACCOUNT</p><h2>Join your<br><span>capital desk.</span></h2><p>Set up your personal account in less than two minutes.</p></div>
+        <form id="signupForm">
+          <label for="signupName">Full name</label>
+          <input id="signupName" type="text" placeholder="Your full name" required>
+          <label for="signupEmail">Email address</label>
+          <input id="signupEmail" type="email" placeholder="you@example.com" required>
+          <label for="signupPassword">Create a password</label>
+          <input id="signupPassword" type="password" placeholder="At least 8 characters" minlength="8" required>
+          <label for="confirmPassword">Confirm password</label>
+          <input id="confirmPassword" type="password" placeholder="Repeat your password" minlength="8" required>
+          <button class="primary-button" type="submit">Create my account <span>&rarr;</span></button>
+        </form>
+        <p class="login-note">Already have an account? <a href="index.html">Sign in instead</a></p>
+        <div class="security-note"><span class="lock-icon">+</span><span>Your account is protected with bank-grade security.</span></div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+  <script src="signup.js"></script>
+</body>
+</html>
