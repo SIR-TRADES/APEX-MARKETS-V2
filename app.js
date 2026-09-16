@@ -76,9 +76,10 @@ function showToast(message){ toast.textContent = message; toast.classList.add('s
 function renderOverview(){
   const portfolio = currentUser.portfolio || 0; const activeInvestment = currentUser.activeInvestment || 0;
   const userTransactions = portfolio ? transactions : [];
+  const planStatus = currentUser.investmentStatus === 'Running' ? `Plan running · ${currentUser.investmentDaysRemaining || 14} days remaining` : activeInvestment ? 'Investment plan active' : 'No active investment';
   viewContent.innerHTML = `<div class="welcome-row"><div><h3>Your capital at a glance</h3><p>Stay close to the moves that matter.</p></div><div class="date-badge">16 Sep 2026 <span>v</span></div></div>
   <div class="summary-grid"><article class="summary-card highlight"><div class="card-label">Total portfolio</div><h4>${money(portfolio)}</h4><div class="card-foot"><span class="trend">${portfolio ? '+ UGX 1,250,000' : 'UGX 0 deposited'}</span> ${portfolio ? 'this cycle' : 'ready when you are'}</div><div class="mini-chart">⌁⌁⌁</div></article><article class="summary-card"><div class="card-label">Active investment</div><h4>${money(activeInvestment)}</h4><div class="card-foot">${activeInvestment ? '12 days remaining' : 'No active investment'}</div></article><article class="summary-card"><div class="card-label">Projected growth</div><h4 class="trend">${portfolio ? '+35%' : '0%'} <span style="font-size:12px;color:var(--muted);font-family:'DM Sans'">/ day</span></h4><div class="card-foot">14-day investment cycle</div></article></div>
-  <div class="section-grid"><article class="content-card"><div class="card-heading"><h3>Portfolio allocation</h3><a href="#" data-view-link="markets">View markets &rarr;</a></div><div class="allocation-chart"><div class="donut"><div class="donut-center">${money(portfolio)}</div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot" style="background:var(--teal)"></i> Standard markets</span><strong>${portfolio ? '58%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--lime)"></i> Active investment</span><strong>${activeInvestment ? '23%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--orange)"></i> Available cash</span><strong>${portfolio ? '19%' : '0%'}</strong></div></div></div></article><article class="content-card"><div class="card-heading"><h3>Quick actions</h3></div><p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0">Move money into your account or request a withdrawal when you need it.</p><div class="action-row"><button class="action-button deposit" data-action="deposit">+ Deposit</button><button class="action-button withdraw" data-action="withdraw">- Withdraw</button></div></article></div>
+  <div class="section-grid"><article class="content-card"><div class="card-heading"><h3>Portfolio allocation</h3><a href="#" data-view-link="markets">View markets &rarr;</a></div><div class="allocation-chart"><div class="donut"><div class="donut-center">${money(portfolio)}</div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot" style="background:var(--teal)"></i> Standard markets</span><strong>${portfolio ? '58%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--lime)"></i> Active investment</span><strong>${activeInvestment ? '23%' : '0%'}</strong></div><div class="legend-row"><span><i class="legend-dot" style="background:var(--orange)"></i> Available cash</span><strong>${portfolio ? '19%' : '0%'}</strong></div></div></div></article><article class="content-card"><div class="card-heading"><h3>Quick actions</h3></div><p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0">Move money into your account or request a withdrawal when you need it.</p><div class="action-row"><button class="action-button deposit" data-action="deposit">+ Deposit</button><button class="action-button withdraw" data-action="withdraw">- Withdraw</button></div><div class="plan-status">${planStatus}</div></article></div>
   <div class="section-grid" style="margin-top:15px"><article class="content-card"><div class="card-heading"><h3>Recent activity</h3><a href="#" data-view-link="activity">See all &rarr;</a></div><div class="transaction-list">${userTransactions.length ? userTransactions.map(transactionTemplate).join('') : '<div class="empty-view"><p>No activity yet. Your confirmed deposits and investments will appear here.</p></div>'}</div></article><article class="content-card"><div class="card-heading"><h3>Markets</h3><a href="#" data-view-link="markets">Open market &rarr;</a></div><div class="forex-list">${forexTemplate('SPX','S&P 500','5,618.25','+0.84%','blue')}${forexTemplate('NDX','Nasdaq 100','19,412.10','+0.32%','yellow')}${forexTemplate('GOLD','Gold / USD','2,563.40','-0.12%','')}</div></article></div>`;
   bindDynamicEvents();
 }
@@ -109,8 +110,27 @@ function renderAdmin(){
   document.querySelectorAll('[data-request-action]').forEach(button => button.onclick = () => {
     const request = pendingRequests.filter(item => item.status === 'Pending')[Number(button.dataset.requestIndex)];
     request.status = button.dataset.requestAction === 'approve' ? 'Confirmed' : 'Rejected';
+    if(request.status === 'Confirmed'){
+      const client = users.find(user => user.email.toLowerCase() === request.email.toLowerCase());
+      if(client){
+        client.portfolio = client.portfolio || 0;
+        client.activeInvestment = client.activeInvestment || 0;
+        if(request.type === 'deposit'){
+          client.portfolio += request.amount;
+          client.activeInvestment = request.amount;
+          client.investmentStatus = 'Running';
+          client.investmentStarted = 'Today';
+          client.investmentDaysRemaining = 14;
+          client.investments = money(client.portfolio);
+        } else {
+          client.portfolio = Math.max(0, client.portfolio - request.amount);
+          client.investments = money(client.portfolio);
+        }
+        persistUsers();
+      }
+    }
     persistRequests();
-    showToast(`${request.type} request ${request.status.toLowerCase()}.`);
+    showToast(`${request.type} request ${request.status.toLowerCase()}${request.status === 'Confirmed' && request.type === 'deposit' ? '. Investment plan is now running.' : '.'}`);
     renderAdmin();
   });
 }
