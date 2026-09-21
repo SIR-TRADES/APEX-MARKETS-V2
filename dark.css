@@ -1,0 +1,113 @@
+:root {
+  --ink: #eaf4f5;
+  --navy: #061b2e;
+  --muted: #aebcca;
+  --line: #24465c;
+  --paper: #081824;
+  --white: #0d2435;
+  --teal: #53d1c4;
+  --lime: #c7f27c;
+}
+
+body,
+body.dashboard-page {
+  background: #081824;
+  color: var(--ink);
+}
+
+.login-screen {
+  background: #081824;
+}
+
+.login-panel {
+  background: #0d2435;
+  color: var(--ink);
+}
+
+.login-heading h2,
+.login-panel label,
+.login-note,
+.security-note,
+.login-panel .field-label-row a {
+  color: var(--ink);
+}
+
+.login-heading p:not(.eyebrow),
+.login-note,
+.security-note {
+  color: var(--muted);
+}
+
+.login-panel input,
+.login-panel select {
+  background: #081824;
+  border-color: #31536a;
+  color: var(--ink);
+}
+
+.login-panel input::placeholder {
+  color: #7890a0;
+}
+
+.dashboard-page .dashboard-main,
+.dashboard-page .dashboard-main h2,
+.dashboard-page .dashboard-main h3,
+.dashboard-page .dashboard-main h4,
+.dashboard-page .card-label,
+.dashboard-page .nav-label {
+  color: var(--ink);
+}
+
+.dashboard-page .content-card,
+.dashboard-page .summary-card {
+  background: #0d2435;
+  border-color: #24465c;
+}
+
+.dashboard-page .summary-card.highlight {
+  background: #10374a;
+}
+
+.dashboard-page .date-badge,
+.dashboard-page .filter-chip {
+  background: #102d41;
+  border-color: #31536a;
+  color: var(--muted);
+}
+
+.dashboard-page .market-tile,
+.dashboard-page .forex-row,
+.dashboard-page .transaction {
+  background: #0a1f30;
+  border-color: #24465c;
+  color: var(--ink);
+}
+
+.dashboard-page .empty-view,
+.dashboard-page .notice,
+.dashboard-page .payment-destination {
+  background: #102d41;
+  color: var(--ink);
+}
+
+.modal {
+  background: #0d2435;
+  color: var(--ink);
+  border-color: #31536a;
+}
+
+.modal input,
+.modal select {
+  background: #081824;
+  border-color: #31536a;
+  color: var(--ink);
+}
+
+.modal .limit-note,
+.modal p {
+  color: var(--muted);
+}
+
+.dashboard-page:before {
+  color: rgba(83, 209, 196, .08);
+}
